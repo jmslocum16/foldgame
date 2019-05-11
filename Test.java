@@ -2,11 +2,11 @@ import java.util.*;
 import java.io.*;
 
 public class Test {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         // first just vizualize
         // then add horizontal folds
         // then add diagonal folds
-        Cell[][] front = new Cell[4][4];
+        /*Cell[][] front = new Cell[4][4];
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 boolean[] neighbors = new boolean[] {(j%2==1), (j>1), (i%2==1), (i>1)};
@@ -14,6 +14,42 @@ public class Test {
             }
         }
         drawBoard(front);
+        */
+
+        Scanner in = new Scanner(new File(args[0]));
+        int R = in.nextInt();
+        int C = in.nextInt();
+        int Sr = in.nextInt();
+        int Sc = in.nextInt();
+        int Er = in.nextInt();
+        int Ec = in.nextInt();
+
+        Cell[][] front = loadBoard(in, R, C);
+	front[Sr][Sc].fillLetter = 'S';
+        front[Er][Ec].fillLetter = 'E';
+        Cell[][] back = loadBoard(in, R, C);
+
+        System.out.println("Front:");
+        drawBoard(front);
+
+        System.out.println("Back:");
+        drawBoard(back);
+ 
+    }
+
+    static Cell[][] loadBoard(Scanner in, int r, int c) {
+        Cell[][] ret = new Cell[r][c];
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) {
+                int v = in.nextInt();
+                boolean[] neighbors = new boolean[4];
+                for (int n = 0; n < 4; n++) {
+                    neighbors[n] = ((1<<n) & v) != 0;
+                    ret[i][j] = new Cell(null, neighbors);
+                }
+            }
+        }
+        return ret;
     }
 
     static void drawBoard(Cell[][] board) {
