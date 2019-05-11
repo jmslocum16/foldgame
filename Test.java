@@ -16,25 +16,52 @@ public class Test {
         drawBoard(front);
         */
 
-        Scanner in = new Scanner(new File(args[0]));
-        int R = in.nextInt();
-        int C = in.nextInt();
-        int Sr = in.nextInt();
-        int Sc = in.nextInt();
-        int Er = in.nextInt();
-        int Ec = in.nextInt();
+        Scanner cmdIn = new Scanner(System.in);
+        System.out.println("Enter level file name:");
+        String levelFilename = cmdIn.nextLine();
+        
+        Scanner levelIn = new Scanner(new File(levelFilename));
+        int R = levelIn.nextInt();
+        int C = levelIn.nextInt();
+        int Sr = levelIn.nextInt();
+        int Sc = levelIn.nextInt();
+        int Er = levelIn.nextInt();
+        int Ec = levelIn.nextInt();
 
-        Cell[][] front = loadBoard(in, R, C);
+        Cell[][] front = loadBoard(levelIn, R, C);
 	front[Sr][Sc].fillLetter = 'S';
         front[Er][Ec].fillLetter = 'E';
-        Cell[][] back = loadBoard(in, R, C);
+        Cell[][] back = loadBoard(levelIn, R, C);
 
-        System.out.println("Front:");
-        drawBoard(front);
+        // System.out.println("Front:");
+        // drawBoard(front);
 
-        System.out.println("Back:");
-        drawBoard(back);
- 
+        // System.out.println("Back:");
+        // drawBoard(back);
+
+        boolean showFront = true;
+        help();
+        while (true) {
+            System.out.println(showFront ? "Front:" : "Back:");
+            drawBoard(showFront ? front : back);
+            String cmd = cmdIn.nextLine();
+            if ("exit".equals(cmd)) {
+                System.out.println("Exiting!");
+                break;
+            } else if ("help".equals(cmd)) {
+                help(); 
+            } else if ("flip".equals(cmd)) {
+               showFront = !showFront; 
+            }
+        }
+        
+    }
+
+    static void help() {
+        System.out.println("Help: ");
+        System.out.println("    flip - switch whether back or front is showing");
+        System.out.println("    help - show this help screen");
+        System.out.println("    exit - quit the game");
     }
 
     static Cell[][] loadBoard(Scanner in, int r, int c) {
