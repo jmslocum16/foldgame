@@ -235,24 +235,77 @@ public class Test {
         }
 
         public GameState vfold(boolean towards, int index) {
-            /*if (index < 0 || index >= front.length) return clone();
-            Cell[][] newFront = new Cell[newR][front[0].length];
-            Cell[][] newBack  = new Cell[newR][front[0].length];
+            // TODO this could probably be simplified if i thought about it some more
+            if (index < 0 || index >= front.length) return clone();
             int newR = front.length - index;
+            Cell[][] newFront = new Cell[Math.max(index, newR)][front[0].length];
+            Cell[][] newBack  = new Cell[Math.max(index, newR)][front[0].length];
             if (newR < index && towards) {
+                for (int r = 0; r < index; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newFront[r][c] = back[index-r-1][front[r].length-c-1].vflip().hflip();
+                    }
+                }
+                for (int r = 0; r < newR; r++) {
+                   for (int c = 0; c < front[r].length; c++) {
+                       newBack[r][c] = new Cell(back[r+index][c]);
+                   }
+                }
+                for (int r = 0; r < index - newR; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newBack[newR+r][c] = front[index-newR-r-1][front[r].length-c-1].vflip().hflip();
+                    }
+                }
             } else if (newR < index) {
-            
+                for (int r = 0; r < newR; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newFront[r][c] = new Cell(front[r+index][c]);
+                    }
+                }
+                for (int r = 0; r < index - newR; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newFront[newR+r][c] = back[index-newR-r-1][front[r].length-c-1].vflip().hflip();
+                    }
+                }
+                for (int r = 0; r < index; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newBack[r][c] = front[index-r-1][front[r].length-c-1].vflip().hflip();
+                    }
+                }
             } else if (towards) {
                 for (int r = 0; r < index; r++) {
-                    for (int c = 0 ; c < front[r].length; c++) {
-                        
+                    for (int c = 0; c < front[r].length; c++) {
+                        newFront[r][c] = back[index-r-1][front[r].length-c-1].vflip().hflip();
+                    }
+                }
+                for (int r = 0; r < newR - index; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newFront[r+index][c] = new Cell(front[r+2*index][c]);
+                    }
+                }
+                for (int r = 0; r < newR; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newBack[r][c] = new Cell(back[r+index][c]);
                     }
                 }
             } else {
-                
-            }*/
-            // TODO
-            return null;
+                for (int r = 0; r < index; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newBack[r][c] = front[index-r-1][front[r].length-c-1].vflip().hflip();
+                    }
+                }
+                for (int r = 0; r < newR - index; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newBack[index + r][c] = new Cell(back[index*2+r][c]);
+                    }
+                }
+                for (int r = 0; r < newR; r++) {
+                    for (int c = 0; c < front[r].length; c++) {
+                        newFront[r][c] = new Cell(front[index+r][c]);
+                    }
+                }
+            }
+            return new GameState(newFront, newBack, "vertical fold");
         }
 
         public GameState hfold(boolean towards, int index) {
@@ -370,6 +423,20 @@ public class Test {
             this.isStart = other.isStart;
             this.isEnd = other.isEnd;
             this.neighbors = Arrays.copyOf(other.neighbors, 4);
+        }
+
+        public Cell vflip() {
+            boolean[] n = Arrays.copyOf(neighbors, neighbors.length);
+            n[1] = neighbors[3];
+            n[3] = neighbors[1];
+            return new Cell(isStart, isEnd, n);
+        }
+
+        public Cell hflip() {
+            boolean[] n = Arrays.copyOf(neighbors, neighbors.length);
+            n[0] = neighbors[2];
+            n[2] = neighbors[0];
+            return new Cell(isStart, isEnd, n);
         }
 
         public void markPath() {
