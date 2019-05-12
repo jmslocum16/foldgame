@@ -3,9 +3,6 @@ import java.io.*;
 
 public class Test {
     public static void main(String[] args) throws Exception {
-        // first just vizualize
-        // then add horizontal folds
-        // then add diagonal folds
 
         Scanner cmdIn = new Scanner(System.in);
         System.out.println("Enter level file name:");
@@ -24,17 +21,16 @@ public class Test {
         front[Er][Ec].isEnd = true;
         Cell[][] back = loadBoard(levelIn, R, C);
 
-        // System.out.println("Front:");
-        // drawBoard(front);
-
-        // System.out.println("Back:");
-        // drawBoard(back);
-
         GameState cur = new GameState(front, back, "");
         List<GameState> stack = new ArrayList<>();
         help();
         while (true) {
+            cur.trySolve();
             drawBoard(cur.front);
+            if (cur.isSolved()) {
+                System.out.println("Congrats, you solved it!!");
+                break;
+            }
             String[] cmdParts = cmdIn.nextLine().trim().split("\\s+");
             String cmd = cmdParts[0];
             if ("exit".equals(cmd) || "e".equals(cmd)) {
@@ -58,6 +54,20 @@ public class Test {
                 int index = Integer.parseInt(cmdParts[2]);
                 stack.add(cur);
                 cur = cur.hfold(foldToward, index);
+            } else if ("vf".equals(cmd) || "vfold".equals(cmd)) {
+                boolean foldToward; 
+                if (cmdParts[1].equals("up")) {
+                    foldToward = true;
+                } else if ("down".equals(cmdParts[1])) {
+                    foldToward = false;
+                } else {
+                    System.out.println("Invalid hf fold dir '" + cmdParts[1] + "'");
+                    help();
+                    continue;
+                }
+                int index = Integer.parseInt(cmdParts[2]);
+                stack.add(cur);
+                cur = cur.vfold(foldToward, index);
             } else if ("undo".equals(cmd) || "u".equals(cmd)) {
                 if (stack.isEmpty()) {
                     System.out.println("Cannot undo any further!");
@@ -86,11 +96,13 @@ public class Test {
         Cell[][] front;
         Cell[][] back;
         String cmd;
+        boolean solved;
 
         public GameState(Cell[][] front, Cell[][] back, String cmd) {
             this.front = front;
             this.back = back;
             this.cmd = cmd;
+            solved = false;
         }
 
         public GameState flip() {
@@ -98,6 +110,113 @@ public class Test {
             front = back;
             back = temp;
             return this;
+        }
+
+        public void trySolve() {
+            Cell start = null;
+            boolean startFront = true;
+            int startR=0;
+            int startC=0;
+            Cell end   = null; 
+            boolean endFront = true;
+            int endR=0;
+            int endC=0;
+
+            for (int r = 0; r < front.length; r++) {
+                for (int c = 0; c < front[r].length; c++) {
+                    Cell cell = front[r][c];
+                    if (cell.isStart) {
+                        start = cell;
+                        startR = r;
+                        startC = c; 
+                        startFront = true;
+                    }
+                    if (cell.isEnd) {
+                        end = cell;
+                        endR = r;
+                        endC = c; 
+                        endFront = true;
+                    }
+                }
+            }
+
+
+            for (int r = 0; r < back.length; r++) {
+                for (int c = 0; c < back[r].length; c++) {
+                    Cell cell = back[r][c];
+                    if (cell.isStart) {
+                        start = cell;
+                        startR = r;
+                        startC = c; 
+                        startFront = false;
+                    }
+                    if (cell.isEnd) {
+                        end = cell;
+                        endR = r;
+                        endC = c; 
+                        endFront = false;
+                    }
+                }
+            }
+
+            if (start == null && end == null) {
+                System.out.println("Unsolvable, no start or end!");
+                return;
+            } else if (start == null) {
+                System.out.println("Unsolvable, no start or end!");
+                return;
+            } else if (end == null) {
+                System.out.println("Unsolvable, no start or end!");
+                return;
+            } else if (startFront != endFront) {
+                return;
+            }
+
+            // TODO add jumping over edge?
+            Cell[][] board = (startFront) ? front : back;
+            
+            Map<Cell, Cell> prevMap = new HashMap<>();
+            prevMap.put(board[startR][startC], board[startR][startC]);
+            Deque<int[]> queue = new ArrayDeque<>();
+            queue.offerLast(new int[] {startR, startC});
+ 
+            int[][] dirs = new int[][] {{0,1}, {-1,0}, {0,-1}, {1,0}};
+            while (!queue.isEmpty()) {
+                int[] pos = queue.pollFirst();
+                // System.out.println("Searching from (" + pos[0] + ", " + pos[1] + ")");
+                Cell cur = board[pos[0]][pos[1]];
+                if (cur == end) {
+                    // System.out.println("Found!");
+                    solved = true;
+                    // mark path
+                    Cell prev = prevMap.get(cur);
+                    while (prev != null && !prev.isStart) {
+                        prev.markPath();
+                        prev = prevMap.get(prev);
+                    }
+                    if (!startFront) flip();
+                    return;
+                }
+                // find neighbors
+                // System.out.println(Arrays.toString(cur.neighbors));
+                for (int k = 0; k < dirs.length; k++) {
+                   if (!cur.neighbors[k]) continue;
+                   int newR = pos[0] + dirs[k][0];
+                   int newC = pos[1] + dirs[k][1];
+                   if (newR >= 0 && newR < board.length && newC >= 0 && newC < board[newR].length) {
+                       Cell n = board[newR][newC];
+                       // System.out.println("on board: [" + newR + "," + newC + "], neighbors: " + Arrays.toString(n.neighbors));
+                       if (n.neighbors[n.oppositeNeighbor(k)] && !prevMap.containsKey(n)) {
+                           prevMap.put(n, cur);
+                           queue.offer(new int[] {newR, newC});
+                       }
+                   }
+               }
+            }
+        }
+
+        public boolean isSolved() {
+            return solved;
         }
 
         private static Cell[][] cloneCells(Cell[][] cells) {
@@ -113,6 +232,27 @@ public class Test {
 
         public GameState clone() {
             return new GameState(cloneCells(front), cloneCells(back), cmd);
+        }
+
+        public GameState vfold(boolean towards, int index) {
+            /*if (index < 0 || index >= front.length) return clone();
+            Cell[][] newFront = new Cell[newR][front[0].length];
+            Cell[][] newBack  = new Cell[newR][front[0].length];
+            int newR = front.length - index;
+            if (newR < index && towards) {
+            } else if (newR < index) {
+            
+            } else if (towards) {
+                for (int r = 0; r < index; r++) {
+                    for (int c = 0 ; c < front[r].length; c++) {
+                        
+                    }
+                }
+            } else {
+                
+            }*/
+            // TODO
+            return null;
         }
 
         public GameState hfold(boolean towards, int index) {
@@ -216,11 +356,14 @@ public class Test {
     static class Cell {
         boolean isStart;
         boolean isEnd;
+        boolean onPath;
         boolean[] neighbors; // degrees [0,90,180,270]
+
         public Cell(boolean isStart, boolean isEnd, boolean[] neighbors) {
             this.isStart = isStart;
             this.isEnd = isEnd;
             this.neighbors  = neighbors;
+            this.onPath = false;
         }
 
         public Cell(Cell other) {
@@ -228,6 +371,11 @@ public class Test {
             this.isEnd = other.isEnd;
             this.neighbors = Arrays.copyOf(other.neighbors, 4);
         }
+
+        public void markPath() {
+            onPath = true;
+        }
+
         int oppositeNeighbor(int neighbor) {
             return (neighbor + 2) % 4;
         }
@@ -235,6 +383,7 @@ public class Test {
         private Character getFillLetter() {
             if (isStart) return 'S';
             if (isEnd) return 'E';
+            if (onPath) return 'X';
             return null;
         }
 
